@@ -1,20 +1,62 @@
-// This sample demonstrates handling intents from an Alexa skill using the Alexa Skills Kit SDK (v2).
-// Please visit https://alexa.design/cookbook for additional examples on implementing slots, dialog management,
-// session persistence, api calls, and more.
-const Alexa = require('ask-sdk-core');
+// index.js
+// ========
 
+const Alexa = require('ask-sdk-core');
+const languageStrings = require('./message.js');
+const i18n = require('i18next');
+
+console.log('getting persistenceAdaper');
+let USE_DYNAMO = false;     // ENABLE THIS TO INSTANTIATE DYNAMODB
+let persistenceAdapter = getPersistenceAdapter();
+
+
+/**
+ * Creates an instance of a persistenceAdapter. This allows us to store persistent data that
+ * will not be lost when quitting the skill. User role  (New Hire or Current Amazonian) will be
+ * stored in S3 while New Hire employee data will be stored in a DynamoDB instance.
+ */
+function getPersistenceAdapter(tableName) {
+    if (USE_DYNAMO === true) {
+        // TODO: dynamodb will be connected to and have a connector instantiated here.
+        // IMPORTANT: don't forget to give DynamoDB access to the role you're using to run this lambda (via IAM policy)
+        const {DynamoDbPersistenceAdapter} = require('ask-sdk-dynamodb-persistence-adapter');
+        return new DynamoDbPersistenceAdapter({
+            // tableName: tableName || 'newHires',
+            createTable: true
+        });
+    }
+    
+    // connect to S3 to store user role (New Hire or Current Amazonian)
+    const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
+    return new S3PersistenceAdapter({
+        bucketName: process.env.S3_PERSISTENCE_BUCKET
+    });
+}
+
+/**
+ * LaunchRequestHandler is invoked as soon as the Alexa skill starts up.
+ */
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speakOutput = 'Welcome, you can say Hello or Help. Which would you like to try?';
+        const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
+        
+        const sessionCounter = sessionAttributes['sessionCounter'];
+        // const userRole = sessionAttributes['userRole']; // TODO: set this in a setRole intent
+        
+        // const speakOutput = handlerInput.t('WELCOME_MSG')
+        console.log(sessionCounter);
+        const speakOutput = !sessionCounter ? handlerInput.t('WELCOME_MSG') : handlerInput.t('WELCOME_BACK_MSG', {role: 'new hire'});   // TODO: use userRole 
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
             .getResponse();
     }
 };
+
+
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -65,10 +107,12 @@ const SessionEndedRequestHandler = {
     }
 };
 
-// The intent reflector is used for interaction model testing and debugging.
-// It will simply repeat the intent the user said. You can create custom handlers
-// for your intents by defining them above, then also adding them to the request
-// handler chain below.
+/**
+ * The intent reflector is used for interaction model testing and debugging.
+ * It will simply repeat the intent the user said. You can create custom handlers
+ * for your intents by defining them above, then also adding them to the request
+ * handler chain below.
+ */
 const IntentReflectorHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest';
@@ -84,9 +128,11 @@ const IntentReflectorHandler = {
     }
 };
 
-// Generic error handling to capture any syntax or routing errors. If you receive an error
-// stating the request handler chain is not found, you have not implemented a handler for
-// the intent being invoked or included it in the skill builder below.
+/**
+ * Generic error handling to capture any syntax or routing errors. If you receive an error
+ * stating the request handler chain is not found, you have not implemented a handler for
+ * the intent being invoked or included it in the skill builder below.
+ */
 const ErrorHandler = {
     canHandle() {
         return true;
@@ -102,19 +148,82 @@ const ErrorHandler = {
     }
 };
 
+/**
+ * Bind pre-set messages from messages.js to funciton t() for handlerInput object.
+ */
+const LocalisationRequestInterceptor = {
+    process(handlerInput) {
+        i18n.init({
+            lng: Alexa.getLocale(handlerInput.requestEnvelope),
+            resources: languageStrings
+        }).then((t) => {
+            handlerInput.t = (...args) => t(...args);
+        });
+    }
+};
+
+/**
+ * Below we use async and await ( more info: javascript.info/async-await )
+ * It's a way to wrap promises and waait for the result of an external async operation
+ * Like getting and saving the persistent attributes
+ */
+const LoadAttributesRequestInterceptor = {
+    async process(handlerInput) {
+        const {attributesManager, requestEnvelope} = handlerInput;
+        if (Alexa.isNewSession(requestEnvelope)){ //is this a new session? this check is not enough if using auto-delegate (more on next module)
+            const persistentAttributes = await attributesManager.getPersistentAttributes() || {};
+            console.log('Loading from persistent storage: ' + JSON.stringify(persistentAttributes));
+            
+            //copy persistent attribute to session attributes
+            attributesManager.setSessionAttributes(persistentAttributes); // ALL persistent attributtes are now session attributes
+        }
+    }
+};
+
+/**
+ * If you disable the skill and reenable it the userId might change and you loose the persistent attributes saved below as userId is the primary key
+ */
+const SaveAttributesResponseInterceptor = {
+    async process(handlerInput, response) {
+        if (!response) return; // avoid intercepting calls that have no outgoing response due to errors
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const shouldEndSession = (typeof response.shouldEndSession === "undefined" ? true : response.shouldEndSession); //is this a session end?
+        
+        if (shouldEndSession || Alexa.getRequestType(requestEnvelope) === 'SessionEndedRequest') { // skill was stopped or timed out
+            // we increment a persistent session counter here
+            sessionAttributes['sessionCounter'] = sessionAttributes['sessionCounter'] ? sessionAttributes['sessionCounter'] + 1 : 1;
+            // sessionAttributes['sessionCounter'] = 0;
+            
+            // we make ALL session attributes persistent
+            console.log('Saving to persistent storage:' + JSON.stringify(sessionAttributes));
+            attributesManager.setPersistentAttributes(sessionAttributes);
+            await attributesManager.savePersistentAttributes();
+        }
+    }
+};
+
 // The SkillBuilder acts as the entry point for your skill, routing all request and response
 // payloads to the handlers above. Make sure any new handlers or interceptors you've
 // defined are included below. The order matters - they're processed top to bottom.
 exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
-        LaunchRequestHandler,
-        HelloWorldIntentHandler,
-        HelpIntentHandler,
-        CancelAndStopIntentHandler,
-        SessionEndedRequestHandler,
-        IntentReflectorHandler, // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+        LaunchRequestHandler,           // built-in handler
+        HelloWorldIntentHandler,        
+        HelpIntentHandler,              // built-in handler
+        CancelAndStopIntentHandler,     // built-in handler
+        SessionEndedRequestHandler,     // built-in handler
+        IntentReflectorHandler,         // make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
     )
     .addErrorHandlers(
         ErrorHandler,
     )
+    .addRequestInterceptors(
+        LocalisationRequestInterceptor,    
+        LoadAttributesRequestInterceptor
+    )
+    .addResponseInterceptors(
+        SaveAttributesResponseInterceptor
+    )
+    .withPersistenceAdapter(persistenceAdapter)
     .lambda();
