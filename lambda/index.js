@@ -43,12 +43,14 @@ const LaunchRequestHandler = {
     handle(handlerInput) {
         const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
         
+        // const sessionRole = sessionAttributes["sessionRole"];
         const sessionCounter = sessionAttributes['sessionCounter'];
+        const roleName = sessionAttributes['roleName'];
         // const userRole = sessionAttributes['userRole']; // TODO: set this in a setRole intent
         
         // const speakOutput = handlerInput.t('WELCOME_MSG')
         console.log(sessionCounter);
-        const speakOutput = !sessionCounter ? handlerInput.t('WELCOME_MSG') : handlerInput.t('WELCOME_BACK_MSG', {role: 'new hire'});   // TODO: use userRole 
+        const speakOutput = !sessionCounter ? handlerInput.t('WELCOME_MSG') : handlerInput.t('WELCOME_BACK_MSG', {role: roleName});   // TODO: use userRole 
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(speakOutput)
@@ -56,6 +58,36 @@ const LaunchRequestHandler = {
     }
 };
 
+/**
+ * This handler allows us to register the user's role as a current employee
+ * or a new hire.
+ */
+const RegisterRoleIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RegisterRoleIntent';
+    },
+    handle(handlerInput) {
+        // access session attributes
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput = 'failed to confirm role!';
+        
+        if (intent.slots.role.confirmationStatus === 'CONFIRMED') {
+            const roleName = Alexa.getSlotValue(requestEnvelope, 'role');
+            // const roleName = roleSlot.value;
+            
+            sessionAttributes['roleName'] = roleName;
+            speakOutput = handlerInput.t('CONFIRMED_ROLE_MSG', {role: roleName});
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .getResponse();
+    }
+};
 
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
@@ -209,6 +241,7 @@ const SaveAttributesResponseInterceptor = {
 exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,           // built-in handler
+        RegisterRoleIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler

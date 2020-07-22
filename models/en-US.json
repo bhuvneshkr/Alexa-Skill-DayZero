@@ -44,6 +44,11 @@
                         }
                     ],
                     "samples": [
+                        "My role is {role}",
+                        "I'm a {role}",
+                        "I am an {role}",
+                        "I'm an {role}",
+                        "I am a {role}",
                         "Register my role"
                     ]
                 }
@@ -55,13 +60,24 @@
                         {
                             "id": "0",
                             "name": {
-                                "value": "NewHire"
+                                "value": "NewHire",
+                                "synonyms": [
+                                    "prospective employee",
+                                    "new hire",
+                                    "new employee"
+                                ]
                             }
                         },
                         {
                             "id": "1",
                             "name": {
-                                "value": "Amazonian"
+                                "value": "Amazonian",
+                                "synonyms": [
+                                    "employer",
+                                    "amazonian",
+                                    "current employee",
+                                    "current amazonian"
+                                ]
                             }
                         }
                     ]
@@ -86,12 +102,8 @@
                             },
                             "validations": [
                                 {
-                                    "type": "isInSet",
-                                    "prompt": "Slot.Validation.818901249165.1553348621888.1561540593138",
-                                    "values": [
-                                        "amazonian",
-                                        "new hire"
-                                    ]
+                                    "type": "hasEntityResolutionMatch",
+                                    "prompt": "Slot.Validation.1564209958945.951835093575.295908895541"
                                 }
                             ]
                         }
@@ -142,11 +154,11 @@
                 ]
             },
             {
-                "id": "Slot.Validation.818901249165.1553348621888.1561540593138",
+                "id": "Slot.Validation.1564209958945.951835093575.295908895541",
                 "variations": [
                     {
                         "type": "PlainText",
-                        "value": "I'm sorry I don't think I got that. Can you tell me if you are a  new hire or an amazonian?"
+                        "value": "Sorry, I didn't get that. Can you say again if you are a new hire or a current amazonian?"
                     }
                 ]
             }
