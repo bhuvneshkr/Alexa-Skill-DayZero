@@ -1,0 +1,155 @@
+{
+    "interactionModel": {
+        "languageModel": {
+            "invocationName": "day zero",
+            "intents": [
+                {
+                    "name": "AMAZON.CancelIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.HelpIntent",
+                    "samples": []
+                },
+                {
+                    "name": "AMAZON.StopIntent",
+                    "samples": []
+                },
+                {
+                    "name": "HelloWorldIntent",
+                    "slots": [],
+                    "samples": [
+                        "hello",
+                        "how are you",
+                        "say hi world",
+                        "say hi",
+                        "hi",
+                        "say hello world",
+                        "say hello"
+                    ]
+                },
+                {
+                    "name": "AMAZON.NavigateHomeIntent",
+                    "samples": []
+                },
+                {
+                    "name": "RegisterRoleIntent",
+                    "slots": [
+                        {
+                            "name": "role",
+                            "type": "RoleType",
+                            "samples": [
+                                "I am a {role}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "Register my role"
+                    ]
+                }
+            ],
+            "types": [
+                {
+                    "name": "RoleType",
+                    "values": [
+                        {
+                            "id": "0",
+                            "name": {
+                                "value": "NewHire"
+                            }
+                        },
+                        {
+                            "id": "1",
+                            "name": {
+                                "value": "Amazonian"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        "dialog": {
+            "intents": [
+                {
+                    "name": "RegisterRoleIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "role",
+                            "type": "RoleType",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.818901249165.1553348621888",
+                                "elicitation": "Elicit.Slot.818901249165.1553348621888"
+                            },
+                            "validations": [
+                                {
+                                    "type": "isInSet",
+                                    "prompt": "Slot.Validation.818901249165.1553348621888.1561540593138",
+                                    "values": [
+                                        "amazonian",
+                                        "new hire"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "delegationStrategy": "ALWAYS"
+        },
+        "prompts": [
+            {
+                "id": "Elicit.Slot.224214902329.501270837250",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please tell me your current {role} . You can say New Hire or Amazonian."
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Are you a new hire or a current Amazonian?"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.224214902329.501270837250.1528012518200",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Are you a New Hire or an Amazonian?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.818901249165.1553348621888",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Please tell me your role. Are you a New Hire or a current Amazonian?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.818901249165.1553348621888",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Just to confirm, you said you are a {role} ?"
+                    }
+                ]
+            },
+            {
+                "id": "Slot.Validation.818901249165.1553348621888.1561540593138",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "I'm sorry I don't think I got that. Can you tell me if you are a  new hire or an amazonian?"
+                    }
+                ]
+            }
+        ]
+    }
+}
