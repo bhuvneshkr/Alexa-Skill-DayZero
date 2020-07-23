@@ -83,6 +83,35 @@ const RegisterRoleIntentHandler = {
         
         return handlerInput.responseBuilder
             .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+/**
+ * As a new hire, ask for your start date.
+ */
+const SayStartDateIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SayStartDateIntent';
+    },
+    handle(handlerInput) {
+        // verify if user is a new hire or current employee
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        
+        let speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
+        if (sessionAttributes['roleName'] === 'NewHire') {
+            // request for start date 
+            
+            // placeholder
+            speakOutput = 'I will tell you your start date when the feature is complete!';
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
             .getResponse();
     }
 };
@@ -240,6 +269,7 @@ exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,           // built-in handler
         RegisterRoleIntentHandler,
+        SayStartDateIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
