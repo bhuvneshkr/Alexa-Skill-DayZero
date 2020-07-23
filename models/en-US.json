@@ -52,6 +52,54 @@
                         "I am a {role}",
                         "Register my role"
                     ]
+                },
+                {
+                    "name": "SayStartDateIntent",
+                    "slots": [],
+                    "samples": [
+                        "what day do i start",
+                        "when do i start",
+                        "tell me my start date",
+                        "when is my start date"
+                    ]
+                },
+                {
+                    "name": "RegisterNewHireIntent",
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "samples": [
+                                "their name is {name}",
+                                "her name is {name}",
+                                "his name is {name}",
+                                "{name}"
+                            ]
+                        },
+                        {
+                            "name": "start_date",
+                            "type": "AMAZON.DATE",
+                            "samples": [
+                                "she will start on {start_date}",
+                                "he will start on {start_date}",
+                                "they are starting on {start_date}",
+                                "they will start on {start_date}",
+                                "she is starting on {start_date}",
+                                "he is starting on {start_date}",
+                                "{start_date}"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "{name} will be starting soon",
+                        "remember a new hire for me",
+                        "remember this new hire's start date",
+                        "{name} starts on {start_date}",
+                        "{start_date}",
+                        "{name}",
+                        "remember this new hire's name",
+                        "{name} is starting on {start_date}"
+                    ]
                 }
             ],
             "types": [
@@ -109,6 +157,33 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "name": "RegisterNewHireIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1431378758544"
+                    },
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1431378758544.1532944983937"
+                            }
+                        },
+                        {
+                            "name": "start_date",
+                            "type": "AMAZON.DATE",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1431378758544.780109119099"
+                            }
+                        }
+                    ]
                 }
             ],
             "delegationStrategy": "ALWAYS"
@@ -160,6 +235,60 @@
                     {
                         "type": "PlainText",
                         "value": "Sorry, I didn't get that. Can you say again if you are a new hire or a current amazonian?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.505062345911",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "I heard {name} will be starting on {start_date} . Did I get that right?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.505062345911.1543896546279",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What is the new hire's name?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.505062345911.468187027318",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "When is our New Hire starting?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1431378758544",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "I heard {name} will be starting on {start_date} . Did I get that right?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1431378758544.1532944983937",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What is the new hire's name?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1431378758544.780109119099",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "When is our New Hire starting?"
                     }
                 ]
             }

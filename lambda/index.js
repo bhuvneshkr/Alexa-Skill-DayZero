@@ -103,10 +103,43 @@ const SayStartDateIntentHandler = {
         
         let speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
         if (sessionAttributes['roleName'] === 'NewHire') {
-            // request for start date 
+            // speakOutput = getNewHireStartDate()
             
             // placeholder
             speakOutput = 'I will tell you your start date when the feature is complete!';
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+/**
+ * As an Amazonian, register a new hire's information.
+ */
+const RegisterNewHireIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RegisterNewHireIntent';
+    },
+    handle(handlerInput) {
+        // verify if a user is a new hire or current employee
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput = handlerInput.t('REGISTER_NEW_HIRE_ERROR');
+        if (sessionAttributes['roleName'] === 'Amazonian' 
+            && intent.confirmationStatus === 'CONFIRMED') {
+            // register a new hire's information
+            const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
+            const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
+            
+            // registerNewHire(newHireName, newHireStartDate);
+            
+            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate});
         }
         
         return handlerInput.responseBuilder
@@ -270,6 +303,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,           // built-in handler
         RegisterRoleIntentHandler,
         SayStartDateIntentHandler,
+        RegisterNewHireIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
