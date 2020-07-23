@@ -42,13 +42,9 @@ const LaunchRequestHandler = {
     },
     handle(handlerInput) {
         const sessionAttributes = handlerInput.attributesManager.getSessionAttributes();
-        
-        // const sessionRole = sessionAttributes["sessionRole"];
         const sessionCounter = sessionAttributes['sessionCounter'];
         const roleName = sessionAttributes['roleName'];
-        // const userRole = sessionAttributes['userRole']; // TODO: set this in a setRole intent
-        
-        // const speakOutput = handlerInput.t('WELCOME_MSG')
+
         console.log(sessionCounter);
         const speakOutput = !sessionCounter ? handlerInput.t('WELCOME_MSG') : handlerInput.t('WELCOME_BACK_MSG', {role: roleName});   // TODO: use userRole 
         return handlerInput.responseBuilder
@@ -76,9 +72,11 @@ const RegisterRoleIntentHandler = {
         let speakOutput = 'failed to confirm role!';
         
         if (intent.slots.role.confirmationStatus === 'CONFIRMED') {
-            const roleName = Alexa.getSlotValue(requestEnvelope, 'role');
-            // const roleName = roleSlot.value;
+            const roleObject = Alexa.getSlot(requestEnvelope, 'role');
             
+            // save the slot object and also the role name (for convenience's sake)
+            sessionAttributes['roleObject'] = roleObject;
+            const roleName = roleObject.resolutions.resolutionsPerAuthority[0].values[0].value.name;
             sessionAttributes['roleName'] = roleName;
             speakOutput = handlerInput.t('CONFIRMED_ROLE_MSG', {role: roleName});
         }

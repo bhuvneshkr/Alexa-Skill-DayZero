@@ -44,6 +44,7 @@
                         }
                     ],
                     "samples": [
+                        "remember my role",
                         "My role is {role}",
                         "I'm a {role}",
                         "I am an {role}",
