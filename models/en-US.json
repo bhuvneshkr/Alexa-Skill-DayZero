@@ -100,6 +100,36 @@
                         "remember this new hire's name",
                         "{name} is starting on {start_date}"
                     ]
+                },
+                {
+                    "name": "InviteToMeetingIntent",
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "samples": [
+                                "name",
+                                "bring {name}",
+                                "invite {name}",
+                                "call {name}",
+                                "bring {name} here"
+                            ]
+                        }
+                    ],
+                    "samples": [
+                        "bring someone to this meeting",
+                        "add someone to this meeting",
+                        "add {name} to this meeting",
+                        "i would like to invite someone into this meeting",
+                        "invite someone to this meeting",
+                        "bring in {name}",
+                        "invite {name} into this meeting",
+                        "invite {name}",
+                        "call {name}",
+                        "bring {name} here",
+                        "can you call {name} here",
+                        "bring {name} into this meeting"
+                    ]
                 }
             ],
             "types": [
@@ -181,6 +211,23 @@
                             "elicitationRequired": true,
                             "prompts": {
                                 "elicitation": "Elicit.Slot.1431378758544.780109119099"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "InviteToMeetingIntent",
+                    "confirmationRequired": false,
+                    "prompts": {},
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "confirmationRequired": true,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "confirmation": "Confirm.Slot.485604506428.418127715591",
+                                "elicitation": "Elicit.Slot.1441522401490.392403482397"
                             }
                         }
                     ]
@@ -289,6 +336,24 @@
                     {
                         "type": "PlainText",
                         "value": "When is our New Hire starting?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1441522401490.392403482397",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Who would you like to bring into your meeting?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Slot.485604506428.418127715591",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Just to double check, you want me to invite {name} to this meeting?"
                     }
                 ]
             }

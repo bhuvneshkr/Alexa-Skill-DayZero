@@ -12,6 +12,8 @@ module.exports = {
             REGISTER_NEW_HIRE_ERROR: 'It sounded like you were trying to register a new hire. Sorry, but you do not have permission for this.',
             REGISTER_NEW_HIRE_SUCCESS: 'Alright, I have successfully registered {{name}} to start on {{startDate}}!',
             MISSING_ROLE_MSG: `It looks like you haven't told me if your role yet. Are you a New Hire or Current Employee? `,
+            INVITE_ERROR_MSG: 'Sorry, I cannot invite that person for you. Please remember only current Amazonians may do this.',
+            INVITE_SUCCESS_MSG: 'Alright! I will let {{name}} know about this meeting right away!',
             HELP_MSG: 'I can remember your role if you tell me you are a new hire or Amazonian. Depending on your role I can help you with a few more things. Would you like to tell me your role? ',
             REPROMPT_MSG: `If you're not sure what to do next try asking for help. If you want to leave just say stop. What would you like to do next? `,
             GOODBYE_MSG: 'Goodbye!',

@@ -97,13 +97,13 @@ const SayStartDateIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'SayStartDateIntent';
     },
     handle(handlerInput) {
-        // verify if user is a new hire or current employee
+        // verify if user is a new hire
         const {attributesManager} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
         
         let speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
         if (sessionAttributes['roleName'] === 'NewHire') {
-            // speakOutput = getNewHireStartDate()
+            // REPLACE THIS: speakOutput = getNewHireStartDate()
             
             // placeholder
             speakOutput = 'I will tell you your start date when the feature is complete!';
@@ -125,7 +125,7 @@ const RegisterNewHireIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RegisterNewHireIntent';
     },
     handle(handlerInput) {
-        // verify if a user is a new hire or current employee
+        // verify if a user is a current employee
         const {attributesManager, requestEnvelope} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
@@ -137,9 +137,41 @@ const RegisterNewHireIntentHandler = {
             const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
             
-            // registerNewHire(newHireName, newHireStartDate);
+            // REPLACE THIS: registerNewHire(newHireName, newHireStartDate);
             
             speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate});
+        }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+/**
+ * As an Amazonian invite another coworker into your current call/meeting.
+ */
+const InviteToMeetingIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'InviteToMeetingIntent';
+    },
+    handle(handlerInput) {
+        // verify if a user is a current employee
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput = handlerInput.t('INVITE_ERROR_MSG');
+        if (sessionAttributes['roleName'] === 'Amazonian' 
+            && intent.slots.name.confirmationStatus === 'CONFIRMED') {
+            // call another employee into the meeting or ping him/her thru Chime
+            const coworkerName = Alexa.getSlotValue(requestEnvelope, 'name');
+                
+            // REPLACE THIS: inviteToMeeting(coworkerName);
+            
+            speakOutput = handlerInput.t('INVITE_SUCCESS_MSG', {name: coworkerName});
         }
         
         return handlerInput.responseBuilder
@@ -304,6 +336,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         RegisterRoleIntentHandler,
         SayStartDateIntentHandler,
         RegisterNewHireIntentHandler,
+        InviteToMeetingIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
