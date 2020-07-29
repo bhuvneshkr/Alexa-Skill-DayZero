@@ -130,7 +130,30 @@
                         "can you call {name} here",
                         "bring {name} into this meeting"
                     ]
+                },
+                {
+                    "name":"GetManagerName",
+                    "slots":[],
+                    "samples": [
+                        "What is the name of my manager",
+                        "managers name",
+                        "name of my manager",
+                        "whats my managers name"
+                    ]
+                },
+                {
+                    "name":"GetTeamName",
+                    "slots":[],
+                    "samples": [
+                        "What is the name of my team",
+                        "team name",
+                        "name of my team",
+                        "whats my teams name"
+                        "whats my team name"
+                        "what is my team name"
+                    ]
                 }
+
             ],
             "types": [
                 {
