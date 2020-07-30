@@ -124,6 +124,7 @@ const SayStartDateIntentHandler = {
             let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
             return promise.then(data => {                
                 let date = data.Item.START_DATE.S
+                let left = utility.daysLeft(date)
                 speakOutput = handlerInput.t('START_DATE_MSG',{date:date});
                 return handlerInput.responseBuilder
                     .speak(speakOutput)

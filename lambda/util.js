@@ -88,10 +88,11 @@ async function getItem(tableName,name) {
 function daysLeft(date) {
     const day = 24 * 60 * 60 * 1000;
     const today = Date.now();   
-    date = startDate.split('-');
-    const startDate = new Date(date[0],date[1],date[2]);
-
-    const left = Math.round((startDate - today)/day)
+    date = startDate.split('-')
+    console.log(date)
+    // const startDate = new Date(date[0],date[1],date[2]);
+    const left = 0;
+    // const left = Math.round((startDate - today)/day)
     return left;
 }
 module.exports = {
