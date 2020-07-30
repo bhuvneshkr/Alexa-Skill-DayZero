@@ -148,12 +148,14 @@ const RegisterNewHireIntentHandler = {
             // register a new hire's information
             const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
+            const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
+            const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
             
             sessionAttributes['name'] = newHireName;
             sessionAttributes['startDate'] = newHireStartDate;
             // REPLACE THIS: registerNewHire(newHireName, newHireStartDate);
             
-            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate});
+            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }
         
         return handlerInput.responseBuilder
@@ -299,6 +301,55 @@ const RemindStartDateIntentHandler = {
             .getResponse();
     }
 };
+
+const GetManagerNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetManagerNameIntent';
+    },
+    handle(handlerInput){
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('MANAGER_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'NewHire'){
+            //DynamoDB Interface
+            const ManagerName = "Mark"
+            speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+        
+
+    }
+}
+
+const GetTeamNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetTeamNameIntent';
+    },
+    handle(handlerInput){
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'NewHire'){
+            //DynameDB Interface
+            const TeamName = "Alexa Team"
+            speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+}
+
 
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
@@ -456,6 +507,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         SayStartDateIntentHandler,
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
+        GetManagerNameIntentHandler,
+        GetTeamNameIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
