@@ -123,27 +123,30 @@ const SayStartDateIntentHandler = {
         
         var speakOutput = handlerInput.t('START_DATE_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire') {
-            var timezone = sessionAttributes['timezone'];
+            // var timezone = sessionAttributes['timezone'];
+            let timezone = 'America/Los_Angeles'
             let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
             return promise.then(data => {                
                 let startDate = data.Item.START_DATE.S
                 let startDateObject = new Date(startDate)
-                const day = startDateObject.getDate();
+                const day = startDateObject.getDate() + 1;
+                console.log(day)
                 const month = startDateObject.getMonth() + 1;  // months are 0-11
                 const year = startDateObject.getFullYear();
                 const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;
                 if (daysUntilStartDate === 0) {
                     speakOutput = 'Congratulations! Welcome, it\'s you\'re first day an Amazonian!'
                 } else {
-                    speakOutput = handlerInput.t('START_DATE_MSG',{date:date});
+                    speakOutput = handlerInput.t('START_DATE_MSG',{date:startDate,num:daysUntilStartDate});
                 }
                 return handlerInput.responseBuilder
                     .speak(speakOutput)
                     .reprompt()
                     .getResponse();
             }).catch(error => {
+                console.log(error)
                 // returns can not find start date or new hire msg
-                speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
+                speakOutput = 'Your date cannot be found';
                 return handlerInput.responseBuilder
                     .speak(speakOutput)
                     .reprompt()
@@ -183,7 +186,6 @@ const RegisterNewHireIntentHandler = {
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
             const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
             const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
-            sessionAttributes['name'] = newHireName;
             utility.putItem('NEW_HIRE',newHireName,newHireStartDate,managerName,teamName)
             speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }

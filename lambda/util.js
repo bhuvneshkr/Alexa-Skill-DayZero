@@ -85,16 +85,16 @@ async function getItem(tableName,name) {
     return await Dynamo.getItem(params).promise();
 }
 
-// function daysLeft(date) {
-//     const day = 24 * 60 * 60 * 1000;
-//     const today = Date.now();   
-//     date = startDate.split('-')
-//     console.log(date)
-//     // const startDate = new Date(date[0],date[1],date[2]);
-//     const left = 0;
-//     // const left = Math.round((startDate - today)/day)
-//     return left;
-// }
+function daysLeft(date) {
+    const day = 24 * 60 * 60 * 1000;
+    const today = Date.now();   
+    date = startDate.split('-')
+    console.log(date)
+    // const startDate = new Date(date[0],date[1],date[2]);
+    const left = 0;
+    // const left = Math.round((startDate - today)/day)
+    return left;
+}
 
 // function getPersistenceAdapter(tableName) {
 //     if (USE_DYNAMO === true) {
@@ -135,5 +135,6 @@ module.exports = {
     doesTableExist,
     createNewHireTable,
     putItem,
-    getItem
+    getItem,
+    daysLeft
 }

@@ -3,11 +3,11 @@ const util = require('./util');
 
 module.exports = {
     getStartDateData(day, month, year, timezone) {
-        const today = moment().tz(timezone).startOf('day');
+        const today = moment().tz(timezone).startOf(day);
         const startDate = moment(`${month}/${day}/${today.year()}`, "MM/DD/YYYY").tz(timezone).startOf('day');
         
-        const daysUntilStartDate = startDate.startOf('day').diff(today, 'days'); // same day returns 0
-
+        const daysUntilStartDate = Math.ceil(startDate.startOf('day').diff(today, 'days',true)); // same day returns 0
+        console.log(today, startDate)
         return {
            daysUntilStartDate:daysUntilStartDate
         }
