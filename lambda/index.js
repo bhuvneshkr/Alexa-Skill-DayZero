@@ -187,13 +187,13 @@ const GetManagerNameIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetManagerNameIntent';
     },
     handle(handlerInput){
-        const attributesManager = handlerInput;
+        const {attributesManager} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
 
-        let speakOutput = handlerInput.t('MANGER_NAME_ERROR_MSG')
-        if (sessionAttributes['roleName'] === 'New Hire '){
+        let speakOutput = handlerInput.t('MANAGER_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'NewHire'){
             //DynamoDB Interface
-            const MangerName = "Mark"
+            const ManagerName = "Mark"
             speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
         }
 
@@ -212,11 +212,11 @@ const GetTeamNameIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetTeamNameIntent';
     },
     handle(handlerInput){
-        const attributesManager = handlerInput;
+        const {attributesManager} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
 
         let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
-        if (sessionAttributes['roleName'] === 'New Hire '){
+        if (sessionAttributes['roleName'] === 'NewHire'){
             //DynameDB Interface
             const TeamName = "Alexa Team"
             speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
@@ -406,3 +406,4 @@ exports.handler = Alexa.SkillBuilders.custom()
     )
     .withPersistenceAdapter(persistenceAdapter)
     .lambda();
+

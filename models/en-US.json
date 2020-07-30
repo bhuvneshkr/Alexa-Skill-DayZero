@@ -132,9 +132,11 @@
                     ]
                 },
                 {
-                    "name":"GetManagerNameIntent",
-                    "slots":[],
+                    "name": "GetManagerNameIntent",
+                    "slots": [],
                     "samples": [
+                        "what's my manager's name",
+                        "what is my manager's name",
                         "What is the name of my manager",
                         "managers name",
                         "name of my manager",
@@ -142,18 +144,18 @@
                     ]
                 },
                 {
-                    "name":"GetTeamNameIntent",
-                    "slots":[],
+                    "name": "GetTeamNameIntent",
+                    "slots": [],
                     "samples": [
+                        "what is my team's name",
                         "What is the name of my team",
                         "team name",
                         "name of my team",
-                        "whats my teams name"
-                        "whats my team name"
+                        "whats my teams name",
+                        "whats my team name",
                         "what is my team name"
                     ]
                 }
-
             ],
             "types": [
                 {
@@ -383,3 +385,4 @@
         ]
     }
 }
+
