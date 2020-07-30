@@ -130,7 +130,6 @@ const SayStartDateIntentHandler = {
                 let startDate = data.Item.START_DATE.S
                 let startDateObject = new Date(startDate)
                 const day = startDateObject.getDate() + 1;
-                console.log(day)
                 const month = startDateObject.getMonth() + 1;  // months are 0-11
                 const year = startDateObject.getFullYear();
                 const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;
@@ -239,33 +238,23 @@ const RemindStartDateIntentHandler = {
         const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
 
-        const startDate = sessionAttributes['startDate'];
         const name = sessionAttributes['name'] || '';
-        let timezone = sessionAttributes['timezone'];
-        const message = Alexa.getSlotValue(requestEnvelope, 'message');
-
-        if (intent.confirmationStatus !== 'CONFIRMED') {
-            return handlerInput.responseBuilder
-                .speak(handlerInput.t('CANCEL_MSG') + handlerInput.t('REPROMPT_MSG'))
-                .reprompt(handlerInput.t('REPROMPT_MSG'))
-                .getResponse();
-        }
+        let timezone = 'America/Los_Angeles'
 
         let speechText = '';
-        const dateAvailable = day && month && year;
-        if (dateAvailable){
-            if (!timezone){
-                //timezone = 'Europe/Rome';  // so it works on the simulator, you should uncomment this line, replace with your time zone and comment sentence below
-                return handlerInput.responseBuilder
-                    .speak(handlerInput.t('NO_TIMEZONE_MSG'))
-                    .getResponse();
-            }
-
-            const startDateData = startDateLogic.getStartDateData(day, month, year, timezone);
-
+        let promise = utility.getItem('NEW_HIRE',name);
+        let message = 'reminder for day one'
+        return promise
+        .then(async function(data) {
             // let's create a reminder via the Reminders API
             // don't forget to enable this permission in your skill configuratiuon (Build tab -> Permissions)
             // or you'll get a SessionEnndedRequest with an ERROR of type INVALID_RESPONSE
+            let startDate = data.Item.START_DATE.S
+            let startDateObject = new Date(startDate)
+            const day = startDateObject.getDate() + 1;
+            const month = startDateObject.getMonth() + 1;  // months are 0-11
+            const year = startDateObject.getFullYear();
+            const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;            
             try {
                 const {permissions} = requestEnvelope.context.System.user;
                 if (!(permissions && permissions.consentToken))
@@ -291,7 +280,7 @@ const RemindStartDateIntentHandler = {
                 }
                 // create reminder structure
                 const reminder = startDateLogic.createStartDateReminder(
-                    startDateData.daysUntilStartDate,
+                    daysUntilStartDate,
                     timezone,
                     Alexa.getLocale(requestEnvelope),
                     message);
@@ -301,6 +290,11 @@ const RemindStartDateIntentHandler = {
                 console.log('Reminder created with token: ' + reminderResponse.alertToken);
                 speechText = handlerInput.t('REMINDER_CREATED_MSG', {name: name});
                 speechText += handlerInput.t('POST_REMINDER_HELP_MSG');
+
+                return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt()
+                .getResponse();
             } catch (error) {
                 console.log(JSON.stringify(error));
                 switch (error.statusCode) {
@@ -316,21 +310,20 @@ const RemindStartDateIntentHandler = {
                         speechText = handlerInput.t('REMINDER_ERROR_MSG');
                 }
                 speechText += handlerInput.t('REPROMPT_MSG');
-            }
-        } else {
-            speechText += handlerInput.t('MISSING_MSG');
-            // we use intent chaining to trigger the birthday registration multi-turn
-            handlerInput.responseBuilder.addDelegateDirective({
-                name: 'RegisterNewHireIntent',
-                confirmationStatus: 'NONE',
-                slots: {}
-            });
-        }
 
-        return handlerInput.responseBuilder
+                return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt()
+                .getResponse();
+            }
+        })
+        .catch(error => {
+            speechText += 'Your date cannot be found';
+            return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(handlerInput.t('REPROMPT_MSG'))
+            .reprompt()
             .getResponse();
+        }); 
     }
 };
 
@@ -346,16 +339,28 @@ const GetManagerNameIntentHandler = {
         let speakOutput = handlerInput.t('MANAGER_NAME_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire'){
             //DynamoDB Interface
-            const ManagerName = "Mark"
-            speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
-        }
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
 
-        return handlerInput.responseBuilder
+            return promise.then(data => {
+                let ManagerName = data.Item.MANAGER_NAME.S
+                speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            }).catch(error => {
+                console.log(error)
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            })
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
-        
-
+        }
     }
 }
 
@@ -370,15 +375,27 @@ const GetTeamNameIntentHandler = {
 
         let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire'){
-            //DynameDB Interface
-            const TeamName = "Alexa Team"
-            speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
-        }
-
-        return handlerInput.responseBuilder
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
+            return promise.then(data => {
+                let TeamName = data.Item.TEAM_NAME.S
+                speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            }).catch(error => {
+                console.log(error)
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            })
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
+        }
     }
 }
 
