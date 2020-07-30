@@ -136,10 +136,12 @@ const RegisterNewHireIntentHandler = {
             // register a new hire's information
             const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
+            const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
+            const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
             
             // REPLACE THIS: registerNewHire(newHireName, newHireStartDate);
             
-            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate});
+            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }
         
         return handlerInput.responseBuilder
@@ -406,4 +408,3 @@ exports.handler = Alexa.SkillBuilders.custom()
     )
     .withPersistenceAdapter(persistenceAdapter)
     .lambda();
-
