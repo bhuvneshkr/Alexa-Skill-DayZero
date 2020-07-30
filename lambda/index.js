@@ -5,10 +5,13 @@ const Alexa = require('ask-sdk-core');
 const languageStrings = require('./message.js');
 const i18n = require('i18next');
 const utility = require('./util.js')
+const util = require('./util'); //utility functions
+const constants = require('./constants');
+const startDateLogic = require('./startDateLogic');
+
 console.log('getting persistenceAdaper');
 let USE_DYNAMO = true;     // ENABLE THIS TO INSTANTIATE DYNAMODB
 let persistenceAdapter = getPersistenceAdapter();
-
 
 /**
  * Creates an instance of a persistenceAdapter. This allows us to store persistent data that
@@ -21,11 +24,11 @@ function getPersistenceAdapter(tableName) {
         // IMPORTANT: don't forget to give DynamoDB access to the role you're using to run this lambda (via IAM policy)
         const {DynamoDbPersistenceAdapter} = require('ask-sdk-dynamodb-persistence-adapter');
         return new DynamoDbPersistenceAdapter({
-            tableName: tableName || 'newHires',
+            tableName: tableName || 'Session',
             createTable: true
         });
     }
-}
+};
 
 /**
  * LaunchRequestHandler is invoked as soon as the Alexa skill starts up.
@@ -63,7 +66,7 @@ const RegisterRoleIntentHandler = {
         const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
-        let speakOutput =  'failed to confirm role!';
+        let speakOutput = 'failed to confirm role!';
         if (intent.slots.role.confirmationStatus === 'CONFIRMED') {
             const roleObject = Alexa.getSlot(requestEnvelope, 'role');
             
@@ -120,12 +123,20 @@ const SayStartDateIntentHandler = {
         
         var speakOutput = handlerInput.t('START_DATE_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire') {
-            // REPLACE THIS: speakOutput = getNewHireStartDate()
+            var timezone = sessionAttributes['timezone'];
             let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
             return promise.then(data => {                
-                let date = data.Item.START_DATE.S
-                let left = utility.daysLeft(date)
-                speakOutput = handlerInput.t('START_DATE_MSG',{date:date});
+                let startDate = data.Item.START_DATE.S
+                let startDateObject = new Date(startDate)
+                const day = startDateObject.getDate();
+                const month = startDateObject.getMonth() + 1;  // months are 0-11
+                const year = startDateObject.getFullYear();
+                const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;
+                if (daysUntilStartDate === 0) {
+                    speakOutput = 'Congratulations! Welcome, it\'s you\'re first day an Amazonian!'
+                } else {
+                    speakOutput = handlerInput.t('START_DATE_MSG',{date:date});
+                }
                 return handlerInput.responseBuilder
                     .speak(speakOutput)
                     .reprompt()
@@ -172,8 +183,8 @@ const RegisterNewHireIntentHandler = {
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
             const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
             const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
+            sessionAttributes['name'] = newHireName;
             utility.putItem('NEW_HIRE',newHireName,newHireStartDate,managerName,teamName)
-            
             speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }
         
@@ -215,6 +226,160 @@ const InviteToMeetingIntentHandler = {
             .getResponse();
     }
 };
+
+const RemindStartDateIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RemindStartDateIntent';
+    },
+    async handle(handlerInput) {
+        const {attributesManager, serviceClientFactory, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+
+        const startDate = sessionAttributes['startDate'];
+        const name = sessionAttributes['name'] || '';
+        let timezone = sessionAttributes['timezone'];
+        const message = Alexa.getSlotValue(requestEnvelope, 'message');
+
+        if (intent.confirmationStatus !== 'CONFIRMED') {
+            return handlerInput.responseBuilder
+                .speak(handlerInput.t('CANCEL_MSG') + handlerInput.t('REPROMPT_MSG'))
+                .reprompt(handlerInput.t('REPROMPT_MSG'))
+                .getResponse();
+        }
+
+        let speechText = '';
+        const dateAvailable = day && month && year;
+        if (dateAvailable){
+            if (!timezone){
+                //timezone = 'Europe/Rome';  // so it works on the simulator, you should uncomment this line, replace with your time zone and comment sentence below
+                return handlerInput.responseBuilder
+                    .speak(handlerInput.t('NO_TIMEZONE_MSG'))
+                    .getResponse();
+            }
+
+            const startDateData = startDateLogic.getStartDateData(day, month, year, timezone);
+
+            // let's create a reminder via the Reminders API
+            // don't forget to enable this permission in your skill configuratiuon (Build tab -> Permissions)
+            // or you'll get a SessionEnndedRequest with an ERROR of type INVALID_RESPONSE
+            try {
+                const {permissions} = requestEnvelope.context.System.user;
+                if (!(permissions && permissions.consentToken))
+                    throw { statusCode: 401, message: 'No permissions available' }; // there are zero permissions, no point in intializing the API
+                const reminderServiceClient = serviceClientFactory.getReminderManagementServiceClient();
+                // reminders are retained for 3 days after they 'remind' the customer before being deleted
+                const remindersList = await reminderServiceClient.getReminders();
+                console.log('Current reminders: ' + JSON.stringify(remindersList));
+                // delete previous reminder if present
+                const previousReminder = sessionAttributes['reminderId'];
+                if (previousReminder){
+                    try {
+                        if (remindersList.totalCount !== "0") {
+                            await reminderServiceClient.deleteReminder(previousReminder);
+                            delete sessionAttributes['reminderId'];
+                            console.log('Deleted previous reminder token: ' + previousReminder);
+                        }
+                    } catch (error) {
+                        // fail silently as this means the reminder does not exist or there was a problem with deletion
+                        // either way, we can move on and create the new reminder
+                        console.log('Failed to delete reminder: ' + previousReminder + ' via ' + JSON.stringify(error));
+                    }
+                }
+                // create reminder structure
+                const reminder = startDateLogic.createStartDateReminder(
+                    startDateData.daysUntilStartDate,
+                    timezone,
+                    Alexa.getLocale(requestEnvelope),
+                    message);
+                const reminderResponse = await reminderServiceClient.createReminder(reminder); // the response will include an "alertToken" which you can use to refer to this reminder
+                // save reminder id in session attributes
+                sessionAttributes['reminderId'] = reminderResponse.alertToken;
+                console.log('Reminder created with token: ' + reminderResponse.alertToken);
+                speechText = handlerInput.t('REMINDER_CREATED_MSG', {name: name});
+                speechText += handlerInput.t('POST_REMINDER_HELP_MSG');
+            } catch (error) {
+                console.log(JSON.stringify(error));
+                switch (error.statusCode) {
+                    case 401: // the user has to enable the permissions for reminders, let's attach a permissions card to the response
+                        handlerInput.responseBuilder.withAskForPermissionsConsentCard(constants.REMINDERS_PERMISSION);
+                        speechText = handlerInput.t('MISSING_PERMISSION_MSG');
+                        break;
+                    case 403: // devices such as the simulator do not support reminder management
+                        speechText = handlerInput.t('UNSUPPORTED_DEVICE_MSG');
+                        break;
+                    //case 405: METHOD_NOT_ALLOWED, please contact the Alexa team
+                    default:
+                        speechText = handlerInput.t('REMINDER_ERROR_MSG');
+                }
+                speechText += handlerInput.t('REPROMPT_MSG');
+            }
+        } else {
+            speechText += handlerInput.t('MISSING_MSG');
+            // we use intent chaining to trigger the birthday registration multi-turn
+            handlerInput.responseBuilder.addDelegateDirective({
+                name: 'RegisterNewHireIntent',
+                confirmationStatus: 'NONE',
+                slots: {}
+            });
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(handlerInput.t('REPROMPT_MSG'))
+            .getResponse();
+    }
+};
+
+const GetManagerNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetManagerNameIntent';
+    },
+    handle(handlerInput){
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('MANAGER_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'NewHire'){
+            //DynamoDB Interface
+            const ManagerName = "Mark"
+            speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+        
+
+    }
+}
+
+const GetTeamNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetTeamNameIntent';
+    },
+    handle(handlerInput){
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'NewHire'){
+            //DynameDB Interface
+            const TeamName = "Alexa Team"
+            speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+}
+
 
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
@@ -373,6 +538,9 @@ exports.handler = Alexa.SkillBuilders.custom()
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
         RegisterNameIntentHandler,
+        GetManagerNameIntentHandler,
+        GetTeamNameIntentHandler,
+        RemindStartDateIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
