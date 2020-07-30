@@ -19,7 +19,11 @@ module.exports = {
             GOODBYE_MSG: 'Goodbye!',
             REFLECTOR_MSG: 'You just triggered {{intent}}',
             FALLBACK_MSG: 'Sorry, I don\'t know about that. Please try again.',
-            ERROR_MSG: 'Sorry, there was an error. Please try again.'
+            ERROR_MSG: 'Sorry, there was an error. Please try again.',
+            MANAGER_NAME_ERROR_MSG: 'Sorry, there was an error in getting your managers name',
+            MANAGER_NAME_SUCCESS_MSG: 'Your managers name is {{ManagerName}}',
+            TEAM_NAME_ERROR_MSG: 'Sorry, there was an error in getting your teams name '
+            TEAM_NAME_SUCCESS_MSG: 'Your teams name is {{TeamName}}'
         }
     }
 }

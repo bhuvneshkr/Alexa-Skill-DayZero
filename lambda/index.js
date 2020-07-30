@@ -181,6 +181,55 @@ const InviteToMeetingIntentHandler = {
     }
 };
 
+const GetManagerNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetManagerNameIntent';
+    },
+    handle(handlerInput){
+        const attributesManager = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('MANGER_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'New Hire '){
+            //DynamoDB Interface
+            const MangerName = "Mark"
+            speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+        
+
+    }
+}
+
+const GetTeamNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetTeamNameIntent';
+    },
+    handle(handlerInput){
+        const attributesManager = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+
+        let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
+        if (sessionAttributes['roleName'] === 'New Hire '){
+            //DynameDB Interface
+            const TeamName = "Alexa Team"
+            speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+}
+
+
 const HelloWorldIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -337,6 +386,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         SayStartDateIntentHandler,
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
+        GetManagerNameIntentHandler,
+        GetTeamNameIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler

@@ -132,7 +132,7 @@
                     ]
                 },
                 {
-                    "name":"GetManagerName",
+                    "name":"GetManagerNameIntent",
                     "slots":[],
                     "samples": [
                         "What is the name of my manager",
@@ -142,7 +142,7 @@
                     ]
                 },
                 {
-                    "name":"GetTeamName",
+                    "name":"GetTeamNameIntent",
                     "slots":[],
                     "samples": [
                         "What is the name of my team",
