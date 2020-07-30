@@ -4,9 +4,9 @@
 const Alexa = require('ask-sdk-core');
 const languageStrings = require('./message.js');
 const i18n = require('i18next');
-
+const utility = require('./util.js')
 console.log('getting persistenceAdaper');
-let USE_DYNAMO = false;     // ENABLE THIS TO INSTANTIATE DYNAMODB
+let USE_DYNAMO = true;     // ENABLE THIS TO INSTANTIATE DYNAMODB
 let persistenceAdapter = getPersistenceAdapter();
 
 
@@ -21,16 +21,10 @@ function getPersistenceAdapter(tableName) {
         // IMPORTANT: don't forget to give DynamoDB access to the role you're using to run this lambda (via IAM policy)
         const {DynamoDbPersistenceAdapter} = require('ask-sdk-dynamodb-persistence-adapter');
         return new DynamoDbPersistenceAdapter({
-            // tableName: tableName || 'newHires',
+            tableName: tableName || 'newHires',
             createTable: true
         });
     }
-    
-    // connect to S3 to store user role (New Hire or Current Amazonian)
-    const {S3PersistenceAdapter} = require('ask-sdk-s3-persistence-adapter');
-    return new S3PersistenceAdapter({
-        bucketName: process.env.S3_PERSISTENCE_BUCKET
-    });
 }
 
 /**
@@ -69,8 +63,7 @@ const RegisterRoleIntentHandler = {
         const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
         
-        let speakOutput = 'failed to confirm role!';
-        
+        let speakOutput =  'failed to confirm role!';
         if (intent.slots.role.confirmationStatus === 'CONFIRMED') {
             const roleObject = Alexa.getSlot(requestEnvelope, 'role');
             
@@ -79,7 +72,31 @@ const RegisterRoleIntentHandler = {
             const roleName = roleObject.resolutions.resolutionsPerAuthority[0].values[0].value.name;
             sessionAttributes['roleName'] = roleName;
             speakOutput = handlerInput.t('CONFIRMED_ROLE_MSG', {role: roleName});
+            
         }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+const RegisterNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RegisterNameIntent';
+    },
+    handle(handlerInput) {
+        // access session attributes
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput =  'failed to confirm name!';
+        const name = Alexa.getSlotValue(requestEnvelope, 'name');
+        sessionAttributes['name'] = name;
+        speakOutput = handlerInput.t('CONFIRMED_NAME_MSG', {name:name});   
         
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -101,18 +118,31 @@ const SayStartDateIntentHandler = {
         const {attributesManager} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
         
-        let speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
+        var speakOutput = handlerInput.t('START_DATE_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire') {
             // REPLACE THIS: speakOutput = getNewHireStartDate()
-            
-            // placeholder
-            speakOutput = 'I will tell you your start date when the feature is complete!';
-        }
-        
-        return handlerInput.responseBuilder
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
+            return promise.then(data => {                
+                let date = data.Item.START_DATE.S
+                speakOutput = handlerInput.t('START_DATE_MSG',{date:date});
+                return handlerInput.responseBuilder
+                    .speak(speakOutput)
+                    .reprompt()
+                    .getResponse();
+            }).catch(error => {
+                // returns can not find start date or new hire msg
+                speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
+                return handlerInput.responseBuilder
+                    .speak(speakOutput)
+                    .reprompt()
+                    .getResponse();
+            });
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
+        }
     }
 };
 
@@ -134,12 +164,16 @@ const RegisterNewHireIntentHandler = {
         if (sessionAttributes['roleName'] === 'Amazonian' 
             && intent.confirmationStatus === 'CONFIRMED') {
             // register a new hire's information
+            if (!utility.doesTableExist("NEW_HIRE")) {
+                utility.createNewHireTable();
+            }
             const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
+            const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
+            const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
+            utility.putItem('NEW_HIRE',newHireName,newHireStartDate,managerName,teamName)
             
-            // REPLACE THIS: registerNewHire(newHireName, newHireStartDate);
-            
-            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate});
+            speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }
         
         return handlerInput.responseBuilder
@@ -337,6 +371,7 @@ exports.handler = Alexa.SkillBuilders.custom()
         SayStartDateIntentHandler,
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
+        RegisterNameIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler

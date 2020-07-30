@@ -88,6 +88,20 @@
                                 "he is starting on {start_date}",
                                 "{start_date}"
                             ]
+                        },
+                        {
+                            "name": "manager_name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "samples": [
+                                "{manager_name}"
+                            ]
+                        },
+                        {
+                            "name": "team_name",
+                            "type": "TeamType",
+                            "samples": [
+                                "{team_name}"
+                            ]
                         }
                     ],
                     "samples": [
@@ -132,9 +146,11 @@
                     ]
                 },
                 {
-                    "name":"GetManagerName",
-                    "slots":[],
+                    "name": "GetManagerNameIntent",
+                    "slots": [],
                     "samples": [
+                        "what's my manager's name",
+                        "what is my manager's name",
                         "What is the name of my manager",
                         "managers name",
                         "name of my manager",
@@ -142,18 +158,18 @@
                     ]
                 },
                 {
-                    "name":"GetTeamName",
-                    "slots":[],
+                    "name": "GetTeamNameIntent",
+                    "slots": [],
                     "samples": [
+                        "what is my team's name",
                         "What is the name of my team",
                         "team name",
                         "name of my team",
-                        "whats my teams name"
-                        "whats my team name"
+                        "whats my teams name",
+                        "whats my team name",
                         "what is my team name"
                     ]
                 }
-
             ],
             "types": [
                 {
@@ -180,6 +196,31 @@
                                     "current employee",
                                     "current amazonian"
                                 ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "TeamType",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "twitch"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "marketplace"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "kindle"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "AWS"
                             }
                         }
                     ]
@@ -234,6 +275,24 @@
                             "elicitationRequired": true,
                             "prompts": {
                                 "elicitation": "Elicit.Slot.1431378758544.780109119099"
+                            }
+                        },
+                        {
+                            "name": "manager_name",
+                            "type": "AMAZON.US_FIRST_NAME",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1072258357140.1510936463655"
+                            }
+                        },
+                        {
+                            "name": "team_name",
+                            "type": "TeamType",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1072258357140.1478661339827"
                             }
                         }
                     ]
@@ -340,7 +399,7 @@
                 "variations": [
                     {
                         "type": "PlainText",
-                        "value": "I heard {name} will be starting on {start_date} . Did I get that right?"
+                        "value": "I heard {name} will be assigned to {team_name} and reporting to {manager_name} starting on {start_date} . Did I get that right?"
                     }
                 ]
             },
@@ -377,6 +436,24 @@
                     {
                         "type": "PlainText",
                         "value": "Just to double check, you want me to invite {name} to this meeting?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1072258357140.1478661339827",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "What team will our new hire be assigned to?"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1072258357140.1510936463655",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Who will our new hire be reporting to?"
                     }
                 ]
             }
