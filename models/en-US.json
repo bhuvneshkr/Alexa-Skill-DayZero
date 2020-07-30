@@ -91,12 +91,12 @@
                         }
                     ],
                     "samples": [
+                        "register a new hire",
+                        "register a new hire for me",
                         "{name} will be starting soon",
                         "remember a new hire for me",
                         "remember this new hire's start date",
                         "{name} starts on {start_date}",
-                        "{start_date}",
-                        "{name}",
                         "remember this new hire's name",
                         "{name} is starting on {start_date}"
                     ]
@@ -130,6 +130,55 @@
                         "can you call {name} here",
                         "bring {name} into this meeting"
                     ]
+                },
+                {
+                    "name": "GetManagerName",
+                    "slots": [],
+                    "samples": [
+                        "What is the name of my manager",
+                        "managers name",
+                        "name of my manager",
+                        "whats my managers name"
+                    ]
+                },
+                {
+                    "name": "GetTeamName",
+                    "slots": [],
+                    "samples": [
+                        "What is the name of my team",
+                        "team name",
+                        "name of my team",
+                        "whats my teams name",
+                        "whats my team name",
+                        "what is my team name"
+                    ]
+                },
+                {
+                    "name": "RemindStartDateIntent",
+                    "slots": [
+                        {
+                            "name": "start_date",
+                            "type": "AMAZON.DATE"
+                        }
+                    ],
+                    "samples": [
+                        "set a reminder for {start_date} as my start date",
+                        "reminder for day one as {start_date}",
+                        "set {start_date} as my start date reminder",
+                        "create a reminder for day one",
+                        "reminder for day one",
+                        "put a reminder for my start date",
+                        "reminder for my start date",
+                        "create a reminder",
+                        "put a reminder",
+                        "create a reminder for my start date",
+                        "set a reminder for my start date",
+                        "set a reminder",
+                        "configure a reminder",
+                        "remind me of my start date",
+                        "start date reminder",
+                        "reminder"
+                    ]
                 }
             ],
             "types": [
@@ -141,6 +190,9 @@
                             "name": {
                                 "value": "NewHire",
                                 "synonyms": [
+                                    "incoming intern",
+                                    "incoming employee",
+                                    "intern",
                                     "prospective employee",
                                     "new hire",
                                     "new employee"
@@ -228,6 +280,24 @@
                             "prompts": {
                                 "confirmation": "Confirm.Slot.485604506428.418127715591",
                                 "elicitation": "Elicit.Slot.1441522401490.392403482397"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "RemindStartDateIntent",
+                    "confirmationRequired": true,
+                    "prompts": {
+                        "confirmation": "Confirm.Intent.1381237474660"
+                    },
+                    "slots": [
+                        {
+                            "name": "start_date",
+                            "type": "AMAZON.DATE",
+                            "confirmationRequired": false,
+                            "elicitationRequired": true,
+                            "prompts": {
+                                "elicitation": "Elicit.Slot.1248086247431.207760116733"
                             }
                         }
                     ]
@@ -354,6 +424,40 @@
                     {
                         "type": "PlainText",
                         "value": "Just to double check, you want me to invite {name} to this meeting?"
+                    }
+                ]
+            },
+            {
+                "id": "Confirm.Intent.1381237474660",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Your first day is {start_date} , did I get that right?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "I heard {start_date} , is that correct?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "To confirm, your start date is {start_date}"
+                    }
+                ]
+            },
+            {
+                "id": "Elicit.Slot.1248086247431.207760116733",
+                "variations": [
+                    {
+                        "type": "PlainText",
+                        "value": "Got it, when's your start date?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Ok, to what date should i set your reminder to?"
+                    },
+                    {
+                        "type": "PlainText",
+                        "value": "Great, now remind when your start date is."
                     }
                 ]
             }
