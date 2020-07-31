@@ -7,7 +7,9 @@ module.exports = {
             WELCOME_MSG: `Welcome to Day Zero! Are you starting as a New Hire soon or are you a Current Amazonian?`,
             WELCOME_BACK_MSG: 'Welcome back to Day Zero, fellow {{role}}!',
             ROLE_REJECTED_MSG: 'No problem. Please say new hire or amazonian again so I can get it right.',
-            CONFIRMED_ROLE_MSG: 'Confirmed your role as {{role}}!',
+            CONFIRMED_ROLE_MSG: 'Confirmed your role as {{role}}! \n What\'s your name?',
+            CONFIRMED_NAME_MSG: 'Hello {{name}}!',
+            START_DATE_MSG: 'Your start date is {{date}} and there is {{num}} days left.',
             START_DATE_ERROR_MSG: 'You have already started at Amazon, silly!',
             REGISTER_NEW_HIRE_ERROR: 'It sounded like you were trying to register a new hire. Sorry, but you do not have permission for this.',
             REGISTER_NEW_HIRE_SUCCESS: 'Alright, I have successfully registered {{name}} to start working at {{t_name}} and report to {{m_name}} starting on {{startDate}}!',
@@ -21,9 +23,9 @@ module.exports = {
             FALLBACK_MSG: 'Sorry, I don\'t know about that. Please try again.',
             ERROR_MSG: 'Sorry, there was an error. Please try again.',
             MANAGER_NAME_ERROR_MSG: 'Sorry, there was an error in getting your managers name',
-            MANAGER_NAME_SUCCESS_MSG: 'Your managers name is {{ManagerName}}',
+            MANAGER_NAME_SUCCESS_MSG: 'Your managers name is {{manager}}',
             TEAM_NAME_ERROR_MSG: 'Sorry, there was an error in getting your teams name ',
-            TEAM_NAME_SUCCESS_MSG: 'Your teams name is {{TeamName}}'
+            TEAM_NAME_SUCCESS_MSG: 'Your teams name is {{team}}'
         }
     }
 }

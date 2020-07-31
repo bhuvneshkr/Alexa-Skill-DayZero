@@ -4,7 +4,7 @@
 const Alexa = require('ask-sdk-core');
 const languageStrings = require('./message.js');
 const i18n = require('i18next');
-
+const utility = require('./util.js')
 const util = require('./util'); //utility functions
 const constants = require('./constants');
 const startDateLogic = require('./startDateLogic');
@@ -24,7 +24,7 @@ function getPersistenceAdapter(tableName) {
         // IMPORTANT: don't forget to give DynamoDB access to the role you're using to run this lambda (via IAM policy)
         const {DynamoDbPersistenceAdapter} = require('ask-sdk-dynamodb-persistence-adapter');
         return new DynamoDbPersistenceAdapter({
-            tableName: tableName || 'newHires',
+            tableName: tableName || 'Session',
             createTable: true
         });
     }
@@ -75,7 +75,31 @@ const RegisterRoleIntentHandler = {
             const roleName = roleObject.resolutions.resolutionsPerAuthority[0].values[0].value.name;
             sessionAttributes['roleName'] = roleName;
             speakOutput = handlerInput.t('CONFIRMED_ROLE_MSG', {role: roleName});
+            
         }
+        
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
+const RegisterNameIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'RegisterNameIntent';
+    },
+    handle(handlerInput) {
+        // access session attributes
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput =  'failed to confirm name!';
+        const name = Alexa.getSlotValue(requestEnvelope, 'name');
+        sessionAttributes['name'] = name;
+        speakOutput = handlerInput.t('CONFIRMED_NAME_MSG', {name:name});   
         
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -97,34 +121,42 @@ const SayStartDateIntentHandler = {
         const {attributesManager} = handlerInput;
         const sessionAttributes = attributesManager.getSessionAttributes();
         
-        let speakOutput = handlerInput.t('START_DATE_ERROR_MSG');
+        var speakOutput = handlerInput.t('START_DATE_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire') {
-            if (sessionAttributes['startDate']) {
-                const startDate = sessionAttributes['startDate']
-                // parse startdate YYYY-MM-DD into day, month, and year
+            // var timezone = sessionAttributes['timezone'];
+            let timezone = 'America/Los_Angeles'
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
+            return promise.then(data => {                
+                let startDate = data.Item.START_DATE.S
                 let startDateObject = new Date(startDate)
-                const day = startDateObject.getDate();
+                const day = startDateObject.getDate() + 1;
                 const month = startDateObject.getMonth() + 1;  // months are 0-11
                 const year = startDateObject.getFullYear();
                 const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;
-                if (startDate === 0) {
+                if (daysUntilStartDate === 0) {
                     speakOutput = 'Congratulations! Welcome, it\'s you\'re first day an Amazonian!'
                 } else {
-                speakOutput = 'You have ' + startDateData.daysUntilStartDate + ' days until your intended start date.';
+                    speakOutput = handlerInput.t('START_DATE_MSG',{date:startDate,num:daysUntilStartDate});
                 }
-            } else {
-                // need to trigger reprompt to fill registerNewHireIntent
-            }
-            // REPLACE THIS: speakOutput = getNewHireStartDate()
-            
-            // placeholder
-            speakOutput = 'I will tell you your start date when the feature is complete!';
-        }
-        
-        return handlerInput.responseBuilder
+                return handlerInput.responseBuilder
+                    .speak(speakOutput)
+                    .reprompt()
+                    .getResponse();
+            }).catch(error => {
+                console.log(error)
+                // returns can not find start date or new hire msg
+                speakOutput = 'Your date cannot be found';
+                return handlerInput.responseBuilder
+                    .speak(speakOutput)
+                    .reprompt()
+                    .getResponse();
+            });
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
+        }
     }
 };
 
@@ -146,15 +178,14 @@ const RegisterNewHireIntentHandler = {
         if (sessionAttributes['roleName'] === 'Amazonian' 
             && intent.confirmationStatus === 'CONFIRMED') {
             // register a new hire's information
+            if (!utility.doesTableExist("NEW_HIRE")) {
+                utility.createNewHireTable();
+            }
             const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
             const newHireStartDate = Alexa.getSlotValue(requestEnvelope, 'start_date'); // format is YYYY-MM-DD
             const managerName = Alexa.getSlotValue(requestEnvelope, 'manager_name');
             const teamName = Alexa.getSlotValue(requestEnvelope, 'team_name');
-            
-            sessionAttributes['name'] = newHireName;
-            sessionAttributes['startDate'] = newHireStartDate;
-            // REPLACE THIS: registerNewHire(newHireName, newHireStartDate);
-            
+            utility.putItem('NEW_HIRE',newHireName,newHireStartDate,managerName,teamName)
             speakOutput = handlerInput.t(`REGISTER_NEW_HIRE_SUCCESS`, {name: newHireName, startDate: newHireStartDate, m_name: managerName, t_name: teamName});
         }
         
@@ -207,33 +238,23 @@ const RemindStartDateIntentHandler = {
         const sessionAttributes = attributesManager.getSessionAttributes();
         const {intent} = requestEnvelope.request;
 
-        const startDate = sessionAttributes['startDate'];
         const name = sessionAttributes['name'] || '';
-        let timezone = sessionAttributes['timezone'];
-        const message = Alexa.getSlotValue(requestEnvelope, 'message');
-
-        if (intent.confirmationStatus !== 'CONFIRMED') {
-            return handlerInput.responseBuilder
-                .speak(handlerInput.t('CANCEL_MSG') + handlerInput.t('REPROMPT_MSG'))
-                .reprompt(handlerInput.t('REPROMPT_MSG'))
-                .getResponse();
-        }
+        let timezone = 'America/Los_Angeles'
 
         let speechText = '';
-        const dateAvailable = day && month && year;
-        if (dateAvailable){
-            if (!timezone){
-                //timezone = 'Europe/Rome';  // so it works on the simulator, you should uncomment this line, replace with your time zone and comment sentence below
-                return handlerInput.responseBuilder
-                    .speak(handlerInput.t('NO_TIMEZONE_MSG'))
-                    .getResponse();
-            }
-
-            const startDateData = startDateLogic.getStartDateData(day, month, year, timezone);
-
+        let promise = utility.getItem('NEW_HIRE',name);
+        let message = 'reminder for day one'
+        return promise
+        .then(async function(data) {
             // let's create a reminder via the Reminders API
             // don't forget to enable this permission in your skill configuratiuon (Build tab -> Permissions)
             // or you'll get a SessionEnndedRequest with an ERROR of type INVALID_RESPONSE
+            let startDate = data.Item.START_DATE.S
+            let startDateObject = new Date(startDate)
+            const day = startDateObject.getDate() + 1;
+            const month = startDateObject.getMonth() + 1;  // months are 0-11
+            const year = startDateObject.getFullYear();
+            const daysUntilStartDate = startDateLogic.getStartDateData(day, month, year, timezone).daysUntilStartDate;            
             try {
                 const {permissions} = requestEnvelope.context.System.user;
                 if (!(permissions && permissions.consentToken))
@@ -259,7 +280,7 @@ const RemindStartDateIntentHandler = {
                 }
                 // create reminder structure
                 const reminder = startDateLogic.createStartDateReminder(
-                    startDateData.daysUntilStartDate,
+                    daysUntilStartDate,
                     timezone,
                     Alexa.getLocale(requestEnvelope),
                     message);
@@ -269,6 +290,11 @@ const RemindStartDateIntentHandler = {
                 console.log('Reminder created with token: ' + reminderResponse.alertToken);
                 speechText = handlerInput.t('REMINDER_CREATED_MSG', {name: name});
                 speechText += handlerInput.t('POST_REMINDER_HELP_MSG');
+
+                return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt()
+                .getResponse();
             } catch (error) {
                 console.log(JSON.stringify(error));
                 switch (error.statusCode) {
@@ -284,21 +310,20 @@ const RemindStartDateIntentHandler = {
                         speechText = handlerInput.t('REMINDER_ERROR_MSG');
                 }
                 speechText += handlerInput.t('REPROMPT_MSG');
-            }
-        } else {
-            speechText += handlerInput.t('MISSING_MSG');
-            // we use intent chaining to trigger the birthday registration multi-turn
-            handlerInput.responseBuilder.addDelegateDirective({
-                name: 'RegisterNewHireIntent',
-                confirmationStatus: 'NONE',
-                slots: {}
-            });
-        }
 
-        return handlerInput.responseBuilder
+                return handlerInput.responseBuilder
+                .speak(speechText)
+                .reprompt()
+                .getResponse();
+            }
+        })
+        .catch(error => {
+            speechText += 'Your date cannot be found';
+            return handlerInput.responseBuilder
             .speak(speechText)
-            .reprompt(handlerInput.t('REPROMPT_MSG'))
+            .reprompt()
             .getResponse();
+        }); 
     }
 };
 
@@ -314,16 +339,28 @@ const GetManagerNameIntentHandler = {
         let speakOutput = handlerInput.t('MANAGER_NAME_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire'){
             //DynamoDB Interface
-            const ManagerName = "Mark"
-            speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
-        }
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
 
-        return handlerInput.responseBuilder
+            return promise.then(data => {
+                let ManagerName = data.Item.MANAGER_NAME.S
+                speakOutput = handlerInput.t('MANAGER_NAME_SUCCESS_MSG',{manager: ManagerName});
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            }).catch(error => {
+                console.log(error)
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            })
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
-        
-
+        }
     }
 }
 
@@ -338,15 +375,27 @@ const GetTeamNameIntentHandler = {
 
         let speakOutput = handlerInput.t('TEAM_NAME_ERROR_MSG')
         if (sessionAttributes['roleName'] === 'NewHire'){
-            //DynameDB Interface
-            const TeamName = "Alexa Team"
-            speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
-        }
-
-        return handlerInput.responseBuilder
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
+            return promise.then(data => {
+                let TeamName = data.Item.TEAM_NAME.S
+                speakOutput = handlerInput.t('TEAM_NAME_SUCCESS_MSG',{team:TeamName});
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            }).catch(error => {
+                console.log(error)
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            })
+        } else {
+            return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt()
             .getResponse();
+        }
     }
 }
 
@@ -507,8 +556,10 @@ exports.handler = Alexa.SkillBuilders.custom()
         SayStartDateIntentHandler,
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
+        RegisterNameIntentHandler,
         GetManagerNameIntentHandler,
         GetTeamNameIntentHandler,
+        RemindStartDateIntentHandler,
         HelloWorldIntentHandler,        
         HelpIntentHandler,              // built-in handler
         CancelAndStopIntentHandler,     // built-in handler
