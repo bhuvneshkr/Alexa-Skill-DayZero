@@ -63,7 +63,8 @@ function putItem(tableName,name,date,manager,team) {
             'NAME': {S:name},
             'START_DATE': {S:date},
             'MANAGER_NAME': {S:manager},
-            'TEAM_NAME': {S:team}
+            'TEAM_NAME': {S:team},
+            'EMBARK':{L:[]} 
         }
     }
 
@@ -75,6 +76,34 @@ function putItem(tableName,name,date,manager,team) {
           }
     });
 }
+
+function updatePlan(tableName,name,plans) {
+    console.log(plans)
+    var params = {
+        TableName:tableName,
+        Key:{
+            'NAME': {S:name}
+        },
+        UpdateExpression: "SET #EMBARK = list_append(#EMBARK, :p)",
+        ExpressionAttributeNames: {
+            "#EMBARK": "EMBARK"
+        },
+        ExpressionAttributeValues:{
+            ":p":{L:[{S:plans}]},
+        },
+        ReturnValues:"UPDATED_NEW"
+    };
+    
+    console.log("Updating the item...");
+    Dynamo.updateItem(params, function(err, data) {
+        if (err) {
+            console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+        } else {
+            console.log("UpdateItem succeeded:", JSON.stringify(data, null, 2));
+        }
+    });
+}
+
 async function getItem(tableName,name) {
     var params = {
         TableName: tableName,
@@ -85,16 +114,16 @@ async function getItem(tableName,name) {
     return await Dynamo.getItem(params).promise();
 }
 
-function daysLeft(date) {
-    const day = 24 * 60 * 60 * 1000;
-    const today = Date.now();   
-    date = startDate.split('-')
-    console.log(date)
-    // const startDate = new Date(date[0],date[1],date[2]);
-    const left = 0;
-    // const left = Math.round((startDate - today)/day)
-    return left;
-}
+// function daysLeft(date) {
+//     const day = 24 * 60 * 60 * 1000;
+//     const today = Date.now();   
+//     date = startDate.split('-')
+//     console.log(date)
+//     // const startDate = new Date(date[0],date[1],date[2]);
+//     const left = 0;
+//     // const left = Math.round((startDate - today)/day)
+//     return left;
+// }
 
 // function getPersistenceAdapter(tableName) {
 //     if (USE_DYNAMO === true) {
@@ -136,5 +165,6 @@ module.exports = {
     createNewHireTable,
     putItem,
     getItem,
-    daysLeft
+    updatePlan,
+    // daysLeft
 }

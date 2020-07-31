@@ -196,6 +196,33 @@ const RegisterNewHireIntentHandler = {
     }
 };
 
+const AssignNewEmbarkPlanIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'AssignNewEmbarkPlanIntent';
+    },
+    handle(handlerInput) {
+        // verify if a user is a current employee
+        const {attributesManager, requestEnvelope} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
+        const {intent} = requestEnvelope.request;
+        
+        let speakOutput = handlerInput.t('New hire cannot be found');
+        if (sessionAttributes['roleName'] === 'Amazonian') {
+
+            const newHireName = Alexa.getSlotValue(requestEnvelope, 'name');
+            const plan = Alexa.getSlotValue(requestEnvelope, 'plan');
+            utility.updatePlan('NEW_HIRE',newHireName,plan)
+            speakOutput = handlerInput.t(`ASSIGN_PLAN_SUCCESS`, {plan: plan, name: newHireName});
+        }
+
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+    }
+};
+
 /**
  * As an Amazonian invite another coworker into your current call/meeting.
  */
@@ -326,7 +353,42 @@ const RemindStartDateIntentHandler = {
         }); 
     }
 };
+const GetPlanIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GetPlanIntent';
+    },
+    handle(handlerInput){
+        const {attributesManager} = handlerInput;
+        const sessionAttributes = attributesManager.getSessionAttributes();
 
+        let speakOutput = handlerInput.t('There is no plan.')
+        if (sessionAttributes['roleName'] === 'NewHire'){
+            //DynamoDB Interface
+            let promise = utility.getItem('NEW_HIRE',sessionAttributes['name'])
+
+            return promise.then(data => {
+                let EMBARK = data.Item.EMBARK.L
+                speakOutput = handlerInput.t('PLAN_MSG',{plan: EMBARK[0].S});
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            }).catch(error => {
+                console.log(error)
+                return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt()
+                .getResponse();
+            })
+        } else {
+            return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt()
+            .getResponse();
+        }
+    }
+}
 const GetManagerNameIntentHandler = {
     canHandle(handlerInput) {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
@@ -557,6 +619,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         RegisterNewHireIntentHandler,
         InviteToMeetingIntentHandler,
         RegisterNameIntentHandler,
+        AssignNewEmbarkPlanIntentHandler,
+        GetPlanIntentHandler,
         GetManagerNameIntentHandler,
         GetTeamNameIntentHandler,
         RemindStartDateIntentHandler,

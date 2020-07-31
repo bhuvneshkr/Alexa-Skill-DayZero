@@ -197,6 +197,32 @@
                         "I'm {name}",
                         "My name is {name}"
                     ]
+                },
+                {
+                    "name": "AssignNewEmbarkPlanIntent",
+                    "slots": [
+                        {
+                            "name": "name",
+                            "type": "AMAZON.US_FIRST_NAME"
+                        },
+                        {
+                            "name": "plan",
+                            "type": "planType"
+                        }
+                    ],
+                    "samples": [
+                        "Assign {name} to do {plan}"
+                    ]
+                },
+                {
+                    "name": "GetPlanIntent",
+                    "slots": [],
+                    "samples": [
+                        "What's my first task",
+                        "Embark",
+                        "Plan ",
+                        "View plan"
+                    ]
                 }
             ],
             "types": [
@@ -252,6 +278,36 @@
                         {
                             "name": {
                                 "value": "AWS"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "planType",
+                    "values": [
+                        {
+                            "name": {
+                                "value": "twitch training"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "aws training "
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "safety training"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "security training"
+                            }
+                        },
+                        {
+                            "name": {
+                                "value": "training"
                             }
                         }
                     ]
